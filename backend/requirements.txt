@@ -1,0 +1,18 @@
+# Pinned dependency baseline; runtime/advisory validation is required before release.
+asgiref==3.8.1
+Django==5.2.18
+django-cors-headers==4.7.0
+djangorestframework==3.18.3
+dj-database-url==3.0.1
+gunicorn==23.0.0
+numpy==2.2.6
+pandas==2.3.2
+psycopg2-binary==2.9.10
+python-dateutil==2.9.0.post0
+pytz==2025.2
+sqlparse==0.6.0
+typing-extensions==4.15.0
+whitenoise==6.9.0
+packaging==25.0
+six==1.17.0
+tzdata==2025.2

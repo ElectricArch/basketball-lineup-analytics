@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "pip install -r requirements.txt"
+  },
+  "deploy": {
+    "startCommand": "APP_ENV=production python manage.py collectstatic --noinput && APP_ENV=production gunicorn app.wsgi:application --workers 1 --worker-class sync --timeout 15 --backlog 16 --limit-request-line 4094 --bind [::]:${PORT}"
+  }
+}

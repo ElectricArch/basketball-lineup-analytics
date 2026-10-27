@@ -1,0 +1,116 @@
+<main class="dashboard">
+  <header class="page-heading">
+    <div class="eyebrow"><span class="section-mark" aria-hidden="true"></span> Basketball operations / Lineup intelligence</div>
+    <h1>Lineup Impact Dashboard</h1>
+    <p class="subtitle">Compare on-court lineup performance across offense and defense.</p>
+    <div class="page-meta"><span class="pill">League-wide analysis</span><span>One possession. Every player combination.</span></div>
+  </header>
+
+  <section class="filters-section" aria-labelledby="filters-heading">
+    <div class="section-heading">
+      <div><div class="eyebrow">01 / Define your view</div><h2 id="filters-heading">Find your lineup.</h2></div>
+      <button type="button" class="button-secondary" (click)="resetFilters()">Reset filters <span aria-hidden="true">↺</span></button>
+    </div>
+    <form [formGroup]="form" class="filter-panel" (submit)="$event.preventDefault()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Lineup Size</mat-label>
+        <select matNativeControl formControlName="lineup_size">
+          @for (size of lineupSizes; track size) { <option [ngValue]="size">{{ size }} {{ size === 1 ? 'player' : 'players' }}</option> }
+        </select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Team</mat-label>
+        <select matNativeControl formControlName="team_id" [attr.aria-busy]="catalogLoading()">
+          <option value="">All Teams</option>
+          @for (team of teams(); track team.team_id) { <option [value]="team.team_id">{{ team.team_name }}</option> }
+        </select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Player</mat-label>
+        <select matNativeControl formControlName="player_id" [attr.aria-busy]="catalogLoading()">
+          <option value="">All Players</option>
+          @for (player of availablePlayers(); track player.player_id) { <option [value]="player.player_id">{{ player.name }}</option> }
+        </select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Minimum Possessions</mat-label>
+        <input matInput type="number" min="0" step="1" formControlName="min_possessions">
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Sort Metric</mat-label>
+        <select matNativeControl formControlName="sort_by">
+          @for (option of sortOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+        </select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Sort Order</mat-label>
+        <select matNativeControl formControlName="sort_order"><option value="desc">Descending</option><option value="asc">Ascending</option></select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Results Limit</mat-label>
+        <select matNativeControl formControlName="limit">
+          @for (limit of limits; track limit) { <option [ngValue]="limit">{{ limit }} lineups</option> }
+        </select>
+      </mat-form-field>
+      <div class="filter-note">Changes apply automatically.<br>Metrics reflect on-court team performance.</div>
+    </form>
+    @if (catalogLoading()) { <p class="catalog-status" role="status">Loading team and player options…</p> }
+    @if (catalogError()) {
+      <div class="catalog-status" role="alert">Team and player options could not be loaded. <button type="button" class="text-button" (click)="loadCatalog()">Retry options</button></div>
+    }
+  </section>
+
+  <section class="results-section" aria-labelledby="results-heading" [attr.aria-busy]="loading()">
+    <div class="section-heading">
+      <div><div class="eyebrow">02 / Read the impact</div><h2 id="results-heading">Performance at a glance.</h2></div>
+      <span class="pill">Current results only</span>
+    </div>
+    @if (loading()) {
+      <div class="state-panel" role="status"><span class="loading-indicator" aria-hidden="true"></span><h3>Building your lineup view</h3><p>Comparing offensive and defensive performance…</p></div>
+    } @else if (error()) {
+      <div class="state-panel" role="alert"><div class="eyebrow">Connection interrupted</div><h3>Lineup data is unavailable.</h3><p>We couldn’t reach the lineup service. Try loading this view again.</p><button type="button" class="button-primary" (click)="retry()">Retry request <span aria-hidden="true">↗</span></button></div>
+    } @else if (!lineups().length) {
+      <div class="state-panel" role="status"><div class="eyebrow">No matching lineups</div><h3>Open up the search.</h3><p>Lower the minimum possessions or choose a different team or player.</p><button type="button" class="button-primary" (click)="resetFilters()">Reset filters <span aria-hidden="true">↗</span></button></div>
+    } @else {
+      <div class="summary-grid">
+        <article class="summary-card count-card">
+          <h3>Lineups Shown</h3><div class="stat-value">{{ lineups().length | number:'1.0-0' }}</div>
+          <p>Matching your filters<br>and selected results limit.</p><span class="card-footnote">Explore. Compare. Decide.</span>
+        </article>
+        @for (highlight of highlights(); track highlight.field) {
+          <article class="summary-card">
+            <h3>{{ highlight.label }}</h3><div class="stat-value">{{ highlight.value | number:'1.1-1' }}</div>
+            <p class="highlight-players" [title]="playerNames(highlight.lineup)">{{ playerNames(highlight.lineup) }}</p>
+            <span class="card-footnote">{{ highlight.note }}</span>
+          </article>
+        }
+      </div>
+      <div class="table-heading"><div><div class="eyebrow">Lineup comparison</div><h3>Every unit. A different impact.</h3></div><span class="table-count" aria-live="polite">{{ lineups().length }} lineups shown</span></div>
+      <p class="table-guide" id="table-guide">Lower Def Rating is better. Def eFG% is opponent eFG%. Turnover rates are per 100 possessions. <span>Scroll horizontally for all metrics →</span></p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Lineup performance comparison, scroll for all metrics" aria-describedby="table-guide">
+        <table mat-table [dataSource]="lineups()">
+          <ng-container matColumnDef="team">
+            <th mat-header-cell *matHeaderCellDef scope="col">Team</th>
+            <td mat-cell *matCellDef="let row"><span class="team-label">{{ row.team_name }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="lineup">
+            <th mat-header-cell *matHeaderCellDef scope="col">Lineup</th>
+            <td mat-cell *matCellDef="let row"><span class="lineup-names">{{ playerNames(row) }}</span></td>
+          </ng-container>
+          @for (metric of metrics; track metric.field) {
+            <ng-container [matColumnDef]="metric.field">
+              <th mat-header-cell *matHeaderCellDef scope="col" class="numeric"><span tabindex="0" [matTooltip]="metric.description" [attr.aria-label]="metric.label + ': ' + metric.description">{{ metric.label }} <span class="info-mark" aria-hidden="true">ⓘ</span></span></th>
+              <td mat-cell *matCellDef="let row" class="numeric" [class.net-value]="metric.field === 'net_rating'">
+                @if (metric.format === 'percent') { {{ row[metric.field] | percent:'1.1-1' }} }
+                @else { @if (metric.field === 'net_rating' && row[metric.field] > 0) {<span>+</span>}{{ row[metric.field] | number:(metric.format === 'integer' ? '1.0-0' : '1.1-1') }} }
+              </td>
+            </ng-container>
+          }
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        </table>
+      </div>
+      <div class="table-footer"><span>On-court impact, measured possession by possession.</span><span>Ratings / 100 possessions</span></div>
+    }
+  </section>
+</main>

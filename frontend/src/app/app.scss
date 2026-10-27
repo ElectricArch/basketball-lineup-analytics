@@ -1,0 +1,14 @@
+@use '../vars.scss' as *;
+
+:host { display: block; min-height: 100%; }
+#app-header {
+  width: 100%;
+  height: 64px;
+  line-height: 64px;
+  background-color: $color-accent;
+  color: white;
+  padding-inline: 24px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+}
